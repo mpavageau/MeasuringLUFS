@@ -124,9 +124,9 @@ void AboutComponent::paint( juce::Graphics & g )
     y += ( height + yIndent );
 
 #ifdef MEASURING_LUFS_APPLICATION
-    text = "The source code for this program can be found at xxx.";
+    text = "The source code for this program can be found at https://github.com/mpavageau/MeasuringLUFS.";
 #else // MEASURING_LUFS_APPLICATION
-    text = "The source code for this plugin can be found at xxx.";
+    text = "The source code for this plugin can be found at https://github.com/mpavageau/MeasuringLUFS.";
 #endif // MEASURING_LUFS_APPLICATION
     g.drawFittedText( text, xIndent, y, getWidth() - 2 * xIndent, height, juce::Justification::centredLeft, 1, 0.01f );
     y += ( height + yIndent );
@@ -155,7 +155,7 @@ void AboutComponent::paint( juce::Graphics & g )
     g.drawFittedText( text, xIndent, y, getWidth() - 2 * xIndent, height, juce::Justification::centredLeft, 1, 0.01f );
     y += ( height + yIndent );
 
-    text = "The latest version can be downloaded at http://repetito.com/measuring_lufs xxxx.";
+    text = "The latest version can be downloaded at http://www.repetito.com/index.php?page=content_measuring_lufs.";
     g.drawFittedText( text, xIndent, y, getWidth() - 2 * xIndent, height, juce::Justification::centredLeft, 1, 0.01f );
     y += ( height + yIndent );
 /*  

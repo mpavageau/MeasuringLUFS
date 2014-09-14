@@ -1,5 +1,5 @@
 
-#Measuring LUFS is a program to measure LUFS volume loudness.
+Measuring LUFS is a program to measure LUFS volume loudness.
 
 LUFS volume loudness is a subjective loudness, calculated as recommended by International Telecommunication Union (ITU), the United Nations specialized agency for information and communication technologies.
 	
@@ -14,5 +14,6 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 This program was developed using the JUCE framework (http://juce.com), and ASIO and VST technologies by [Steinberg Media Technologies](http://www.steinberg.net/en/company/developers.html).
     
 This program was developed by [Mathieu Pavageau](mailto:contact@repetito.com) - Copyright (c) 2014.
-The latest version can be downloaded at [http://repetito.com/measuring_lufs](http://repetito.com/measuring_lufs) (arf not yet uploaded..).
+
+The latest version can be downloaded at [http://www.repetito.com/index.php?page=content_measuring_lufs](http://www.repetito.com/index.php?page=content_measuring_lufs).
 	
