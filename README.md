@@ -29,4 +29,4 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Details of these licenses can be found at: [www.gnu.org/licenses](www.gnu.org/licenses).
+Details of these licenses can be found at: [www.gnu.org/licenses](http://www.gnu.org/licenses).
