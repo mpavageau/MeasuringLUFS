@@ -44,14 +44,14 @@
 #define LUFS_EDITOR_WIDTH 750
 #define LUFS_EDITOR_HEIGHT 500
 
-#define LUFS_COLOR_BACKGROUND juce::Colours::black
-#define LUFS_COLOR_FONT juce::Colours::lightgrey
+#define LUFS_COLOR_BACKGROUND juce::Colour( 0xff1A0001 )
+#define LUFS_COLOR_FONT juce::Colour(0xff1A0001).interpolatedWith(juce::Colour(juce::Colours::white), 0.7f )
 
 #define COLOR_LUFSTIME LUFS_COLOR_FONT
-#define COLOR_MOMENTARY ( juce::Colours::blue ).interpolatedWith( juce::Colours::lightblue, 0.5f )
-#define COLOR_SHORTTERM ( juce::Colours::green ).interpolatedWith( juce::Colours::white, 0.2f )
-#define COLOR_INTEGRATED juce::Colours::orange 
-#define COLOR_RANGE juce::Colours::grey 
+#define COLOR_MOMENTARY juce::Colour(0xffFFCC00)
+#define COLOR_SHORTTERM juce::Colour(0xff66CBFF)
+#define COLOR_INTEGRATED juce::Colour(0xffFF6600) 
+#define COLOR_RANGE juce::Colour(0xff1A0001).interpolatedWith(juce::Colour(juce::Colours::white), 0.4f )
 #define COLOR_BACKGROUND_GRAPH juce::Colours::darkgrey
 
 #endif // __LUFS_APPINCLUDESANDDEFS_H__

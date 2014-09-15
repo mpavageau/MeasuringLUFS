@@ -155,7 +155,7 @@ void AboutComponent::paint( juce::Graphics & g )
     g.drawFittedText( text, xIndent, y, getWidth() - 2 * xIndent, height, juce::Justification::centredLeft, 1, 0.01f );
     y += ( height + yIndent );
 
-    text = "The latest version can be downloaded at http://www.repetito.com/index.php?page=content_measuring_lufs.";
+    text = "Binary versions can be downloaded at http://www.repetito.com/index.php?page=content_measuring_lufs.";
     g.drawFittedText( text, xIndent, y, getWidth() - 2 * xIndent, height, juce::Justification::centredLeft, 1, 0.01f );
     y += ( height + yIndent );
 /*  
