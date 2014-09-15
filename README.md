@@ -15,8 +15,7 @@ and ASIO and VST technologies by [Steinberg Media Technologies](http://www.stein
 
 This program was developed by [Mathieu Pavageau](mailto:contact@repetito.com) - Copyright (c) 2014.
 
-The latest version can be downloaded
-at [http://www.repetito.com/index.php?page=content_measuring_lufs](http://www.repetito.com/index.php?page=content_measuring_lufs).
+Binary versions can be downloaded from the [Repetito website](http://www.repetito.com/index.php?page=content_measuring_lufs).
 
 License (GPL)
 =============
@@ -30,4 +29,4 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Details of these licenses can be found at: [www.gnu.org/licenses].
+Details of these licenses can be found at: [www.gnu.org/licenses](www.gnu.org/licenses).
