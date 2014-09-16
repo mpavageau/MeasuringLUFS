@@ -59,6 +59,11 @@ end
         defines { 
             "MEASURING_LUFS_PLUGIN",
         }
+            
+        files { 
+            "extern/juce/modules/juce_audio_plugin_client/VST/juce_VST_Wrapper.cpp",
+            "extern/juce/modules/juce_audio_plugin_client/utility/juce_PluginUtilities.cpp",
+        }        
         configuration "Debug"
             defines "DEBUG"
             flags "Symbols"

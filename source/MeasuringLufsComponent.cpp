@@ -125,7 +125,7 @@ void MeasuringLufsComponent::buttonClicked( juce::Button* )
     component.setSize( 600, 400 );
     juce::String selectAudioDevice( "Select the Audio Device (channels order is L R C Lfe Ls Rs)" );
 
-    juce::DialogWindow::showModalDialog( selectAudioDevice, &component, this, LUFS_COLOR_BACKGROUND, true, false, false );
+    juce::DialogWindow::showModalDialog( selectAudioDevice, &component, this, LUFS_COLOR_FONT, true, false, false );
 
     updateAudioDeviceName();
 
