@@ -53,8 +53,6 @@
 //#define JUCE_JACK 1
 //#define JUCE_PLUGINHOST_VST3 1
 
-//#if ! (JUCE_PLUGINHOST_AU || JUCE_PLUGINHOST_VST || JUCE_PLUGINHOST_VST3)
-
 #define JucePlugin_Name "Measuring LUFS"
 #define JucePlugin_Version                1.0.0
 #define JucePlugin_VersionCode            0x10000
@@ -79,6 +77,7 @@
 // Audio plugin settings..
 
 #define JucePlugin_Build_VST 1
+#define JucePlugin_Build_VST3 1
 #define JucePlugin_Build_AU               1
 #define JucePlugin_Build_RTAS             0
 #define JucePlugin_Build_AAX              0

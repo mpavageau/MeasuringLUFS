@@ -18,6 +18,14 @@ end
     objdir "build/temp"
     platforms "x32"
     targetdir "build/bin"
+
+if ( _ACTION == "xcode4" ) then
+        files { 
+            "source/**.h", 
+            "source/**.cpp",
+            "source/**.mm",
+            }
+else
         files { 
             "source/**.h", 
             "source/**.cpp",
@@ -34,8 +42,22 @@ end
             "extern/juce/modules/juce_gui_basics/juce_gui_basics.cpp",
             "extern/juce/modules/juce_gui_extra/juce_gui_extra.cpp",
             }
-    --links { "user32", "gdi32" } 
-    
+end
+			
+if ( _ACTION == "xcode4" ) then
+    links { 
+		"AppKit.framework", 
+		"AudioToolBox.framework", 
+		"Carbon.framework", 
+		"CoreAudio.framework", 
+		"CoreMIDI.framework", 
+		"Foundation.framework", 
+		"IOKit.framework", 
+		"Quartz.framework", 
+		"vecLib.framework", 
+		"WebKit.framework", 
+		} 
+end
     
     project "MeasuringLUFS_App_x32"
         kind "WindowedApp"
@@ -61,10 +83,18 @@ end
             "MEASURING_LUFS_PLUGIN",
         }
             
+if ( _ACTION == "xcode4" ) then
         files { 
             "extern/juce/modules/juce_audio_plugin_client/VST/juce_VST_Wrapper.cpp",
             "extern/juce/modules/juce_audio_plugin_client/utility/juce_PluginUtilities.cpp",
-        }        
+            "extern/juce/modules/juce_audio_plugin_client/VST3/juce_VST3_Wrapper.mm",
+		}        
+else
+        files { 
+            "extern/juce/modules/juce_audio_plugin_client/VST/juce_VST_Wrapper.cpp",
+            "extern/juce/modules/juce_audio_plugin_client/utility/juce_PluginUtilities.cpp",
+		}        
+end
         configuration "Debug"
             defines "DEBUG"
             flags "Symbols"

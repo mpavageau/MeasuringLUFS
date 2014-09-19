@@ -23,21 +23,8 @@
 
 #include "Chart.h"
 
- #include "LufsAudioProcessor.h"
- #include "LufsPluginEditor.h"
-
-
-void OUTPUTDEBUG( const char * czText, ... )
-{
-    char formattedText[0x200];
-    va_list args ;
-    va_start (args, czText);
-    vsprintf_s(formattedText, czText, args);
-    va_end (args) ;
-
-    DBG( formattedText ) ; 
-}
-
+#include "LufsAudioProcessor.h"
+#include "LufsPluginEditor.h"
 
 int Chart::getVolumeY( const int height, const float decibels )
 {
@@ -82,12 +69,7 @@ void Chart::update()
 void Chart::paint(juce::Graphics& g)
 {
     juce::Rectangle<int> clipBounds = g.getClipBounds();
-/*    juce::String log("Chart::paint X");
-    log += clipBounds.getX(); 
-    log += " width ";
-    log += clipBounds.getWidth();
-    DBG( log );
-    */
+
     LufsAudioProcessor* processor = m_editor->getProcessor();
 
     const int imageWidth = getWidth();
@@ -117,12 +99,6 @@ void Chart::paint(juce::Graphics& g)
                 g.fillRect( 0, y, imageWidth, 1 );
             }
         }
-/*
-        juce::Font timeFont( 18.f );
-        timeFont.setBold(true);
-        g.setFont( timeFont );
-        g.setColour( juce::Colours::black );
-        */
 
         // time lines
         const int beginning = clipBounds.getX(); 
@@ -159,32 +135,11 @@ void Chart::paint(juce::Graphics& g)
         if ( beginning + size > m_validSize - 2 )
             size = m_validSize - 2 - beginning;
 
-//        if ( beginning < m_validSize - 2 )
         {
-//             paintValues( g, COLOR_MOMENTARY, processor->m_lufsProcessor.getMomentaryVolumeArray(), 1, beginning, m_validSize - 1 - beginning );
-//             paintValues( g, COLOR_SHORTTERM, processor->m_lufsProcessor.getShortTermVolumeArray(), 1, beginning, m_validSize - 1 - beginning );
-
             const int factor = 1;
             paintValues( g, COLOR_MOMENTARY, processor->m_lufsProcessor.getMomentaryVolumeArray(), factor, beginning, size / factor );
             paintValues( g, COLOR_SHORTTERM, processor->m_lufsProcessor.getShortTermVolumeArray(), factor, beginning, size / factor );
         }
-/*
-        g.setColour( COLOR_MOMENTARY );
-
-        for ( int i = beginning ; i < m_validSize - 2 ; ++i )
-        {
-            float vol1 = processor->m_lufsProcessor.getMomentaryVolumeArray()[ i ];
-            float vol2 = processor->m_lufsProcessor.getMomentaryVolumeArray()[ i + 1];
-            g.drawLine( (float)( i - beginning ), (float)getVolumeY( imageHeight, vol1 ), (float)(i + 1 - beginning), (float)getVolumeY( imageHeight, vol2 ), 3.f );
-        }
-
-        g.setColour( COLOR_SHORTTERM );
-        for ( int i = beginning ; i < m_validSize - 2 ; ++i )
-        {
-            float vol1 = processor->m_lufsProcessor.getShortTermVolumeArray()[ i ];
-            float vol2 = processor->m_lufsProcessor.getShortTermVolumeArray()[ i + 1];
-            g.drawLine( (float)(i - beginning), (float)getVolumeY( imageHeight, vol1 ), (float)(i + 1 - beginning), (float)getVolumeY( imageHeight, vol2 ), 3.f );
-        }*/
     }
     else
     {
@@ -196,11 +151,6 @@ void Chart::paint(juce::Graphics& g)
         }
     }
 
-/*    g.setColour( juce::Colours::black );
-    juce::Font lufsFont( 12.f );
-    lufsFont.setBold(true);
-    g.setFont( lufsFont );
-*/
     g.setColour( juce::Colours::black );
 
     // volume text
@@ -240,31 +190,6 @@ void Chart::paintValues( juce::Graphics& g, const juce::Colour _color, const flo
 
     if ( _itemsPerPixel == 1 )
     {
-/*
-        float vol = *_data++;
-
-        juce::Path p;
-        p.startNewSubPath( (float)_offset , (float) getVolumeY( imageHeight, vol ) );
-
-        juce::Array<float> volYArray;
-        for ( int i = _offset + 1 ; i < _offset + _pixels ; ++i )
-        {
-            vol = *_data++;
-            float volY = (float)getVolumeY( imageHeight, vol );
-            volYArray.add( volY );
-            p.lineTo( (float)i, volY );
-        }
-
-        for ( int i = _offset + _pixels - 1 ; i > _offset ; --i )
-        {
-            int arrayOffset = i - _offset - 1;
-            float volY = volYArray[ arrayOffset ];
-            p.lineTo( 4.f + (float)i, 4.f + volY );
-        }
-
-        p.closeSubPath();
-        g.fillPath( p );
-*/
         float vol1 = *_data++;
         float vol2 = *_data++;
 
@@ -297,7 +222,6 @@ void Chart::paintValues( juce::Graphics& g, const juce::Colour _color, const flo
                 if ( val < min2 ) min2 = val;
             }
 
-//            g.drawLine( (float)( i ), (float)getVolumeY( imageHeight, max ), (float)( i + 1 ), (float)getVolumeY( imageHeight, max ), 3.f );
             g.drawLine( (float)( i ), (float)getVolumeY( imageHeight, max1 ), (float)( i + 1 ), (float)getVolumeY( imageHeight, max2 ), 3.f );
             max1 = max2;
         }
@@ -315,18 +239,6 @@ ChartView::ChartView( float _minChartVolume, float _maxChartVolume )
 
     setViewedComponent( &m_chart, false );
 }
-/*
-void ChartView::visibleAreaChanged( const juce::Rectangle<int>& newVisibleArea )
-{
-    juce::String log("ChartView::visibleAreaChanged left ");
-    log += newVisibleArea.getTopLeft().getX();
-    log += " right ";
-    log += newVisibleArea.getBottomRight().getX();
-    log += " width ";
-    log += m_chart.getWidth();
-    DBG( log );
-    juce::Viewport::visibleAreaChanged( newVisibleArea );
-}*/
 
 void ChartView::resized()
 {
@@ -339,31 +251,6 @@ void ChartView::mouseWheelMove( const juce::MouseEvent& /*event*/, const juce::M
     text += " y: ";
     text += juce::String( wheel.deltaY );
     DBG(text);
-/*
-    const int viewPositionX = getViewPositionX();
-    const int viewPositionY = getViewPositionY();
-
-    if ( wheel.deltaY > 0.f )
-    {
-        int newPositionX = viewPositionX + getViewWidth() / 2;
-        if ( newPositionX + getWidth() > m_chart.getWidth() )
-            newPositionX = m_chart.getWidth() - getWidth();
-        
-        setViewPosition( newPositionX, viewPositionY );
-    }
-    else if ( wheel.deltaY < 0.f )
-    {
-        int newPositionX = viewPositionX - getViewWidth() / 2;
-        if ( newPositionX < 0 )
-            newPositionX = 0;
-        
-        setViewPosition( newPositionX, viewPositionY );
-    }
-
-    OUTPUTDEBUG( "viewPositionX %d -> %d (getMaximumVisibleWidth() %d getViewWidth() %d chart width %d)", 
-        viewPositionX, getViewPositionX(), getMaximumVisibleWidth(), getViewWidth(), m_chart.getWidth() );
-
-    juce::Viewport::mouseWheelMove( event, wheel );*/
 
     const int viewPositionX = getViewPositionX();
     const int width = m_chart.getWidth() - getWidth();

@@ -15,27 +15,49 @@ end
         "extern/asiosdk/common", 
         "extern/vstsdk2.4", 
         }
-    files { 
-        "source/**.h", 
-        "source/**.cpp",
-        "extern/juce/modules/juce_audio_basics/juce_audio_basics.cpp",
-        "extern/juce/modules/juce_audio_devices/juce_audio_devices.cpp",
-        "extern/juce/modules/juce_audio_formats/juce_audio_formats.cpp",
-        "extern/juce/modules/juce_audio_processors/juce_audio_processors.cpp",
-        "extern/juce/modules/juce_audio_utils/juce_audio_utils.cpp",
-        "extern/juce/modules/juce_core/juce_core.cpp",
-        "extern/juce/modules/juce_cryptography/juce_cryptography.cpp",
-        "extern/juce/modules/juce_data_structures/juce_data_structures.cpp",
-        "extern/juce/modules/juce_events/juce_events.cpp",
-        "extern/juce/modules/juce_graphics/juce_graphics.cpp",
-        "extern/juce/modules/juce_gui_basics/juce_gui_basics.cpp",
-        "extern/juce/modules/juce_gui_extra/juce_gui_extra.cpp",
-        }
     objdir "build/temp"
     platforms "x64"
     targetdir "build/bin"
-    --links { "user32", "gdi32" } 
-    
+
+if ( _ACTION == "xcode4" ) then
+        files { 
+            "source/**.h", 
+            "source/**.cpp",
+            "source/**.mm", 
+            }
+else
+        files { 
+            "source/**.h", 
+            "source/**.cpp",
+            "extern/juce/modules/juce_audio_basics/juce_audio_basics.cpp",
+            "extern/juce/modules/juce_audio_devices/juce_audio_devices.cpp",
+            "extern/juce/modules/juce_audio_formats/juce_audio_formats.cpp",
+            "extern/juce/modules/juce_audio_processors/juce_audio_processors.cpp",
+            "extern/juce/modules/juce_audio_utils/juce_audio_utils.cpp",
+            "extern/juce/modules/juce_core/juce_core.cpp",
+            "extern/juce/modules/juce_cryptography/juce_cryptography.cpp",
+            "extern/juce/modules/juce_data_structures/juce_data_structures.cpp",
+            "extern/juce/modules/juce_events/juce_events.cpp",
+            "extern/juce/modules/juce_graphics/juce_graphics.cpp",
+            "extern/juce/modules/juce_gui_basics/juce_gui_basics.cpp",
+            "extern/juce/modules/juce_gui_extra/juce_gui_extra.cpp",
+            }
+end
+			
+if ( _ACTION == "xcode4" ) then
+    links { 
+		"AppKit.framework", 
+		"AudioToolBox.framework", 
+		"Carbon.framework", 
+		"CoreAudio.framework", 
+		"CoreMIDI.framework", 
+		"Foundation.framework", 
+		"IOKit.framework", 
+		"Quartz.framework", 
+		"vecLib.framework", 
+		"WebKit.framework", 
+		} 
+end
     
     project "MeasuringLUFS_App_x64"
         kind "WindowedApp"
@@ -60,10 +82,18 @@ end
             "MEASURING_LUFS_PLUGIN",
         }
             
+if ( _ACTION == "xcode4" ) then
         files { 
             "extern/juce/modules/juce_audio_plugin_client/VST/juce_VST_Wrapper.cpp",
             "extern/juce/modules/juce_audio_plugin_client/utility/juce_PluginUtilities.cpp",
-        }        
+            "extern/juce/modules/juce_audio_plugin_client/VST3/juce_VST3_Wrapper.mm",
+		}        
+else
+        files { 
+            "extern/juce/modules/juce_audio_plugin_client/VST/juce_VST_Wrapper.cpp",
+            "extern/juce/modules/juce_audio_plugin_client/utility/juce_PluginUtilities.cpp",
+		}        
+end
         configuration "Debug"
             defines "DEBUG"
             flags "Symbols"

@@ -87,13 +87,7 @@ public:
         }
 
         const int indexBefore = beginIndex + (int)( percentile * (float)( size() - beginIndex - 1 ) );
-        return getUnchecked( indexBefore );/*
-        const int indexAfter = indexBefore + 1;
-        jassert( indexAfter < size() );
-
-        float alpha = percentile * (float)( size() - 1 ) - (float)indexBefore;
-
-        return ( 1.f - alpha ) * getUnchecked( indexBefore ) + alpha * getUnchecked( indexAfter );*/
+        return getUnchecked( indexBefore );
     }
 
     int findIndexAfterValue_( float value )
@@ -105,12 +99,6 @@ public:
         {
             if ( getUnchecked( i ) > value )
             {
-/*
-#pragma message ("debug code to be removed from findIndexAfterValue")
-                for ( int j = i ; j < size() ; ++j )
-                {
-                    jassert( getUnchecked( j ) >= value );
-                }*/
                 return i;
             }
         }
@@ -120,13 +108,11 @@ public:
 
     int findIndexAfterValue( float value )
     {
-        // to be optimized
+        // could be optimized
         jassert( size() );
 
         if ( getUnchecked( 0 ) > value ) 
         {
-            int test = findIndexAfterValue_( value );
-            jassert( 0 == test );
             return 0;
         }
 
@@ -140,12 +126,6 @@ public:
                 indexAfter = index;
             else
                 indexBefore = index;
-        }
-
-        int test = findIndexAfterValue_( value );
-//        if ( test )
-        {
-            jassert( indexAfter == test );
         }
 
         return indexAfter;

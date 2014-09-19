@@ -161,11 +161,7 @@ void LufsProcessor::processBlock( juce::AudioSampleBuffer& buffer )
 
         // copy to internal buffer
         m_block.copyFrom( i, 0, buffer, i, 0, buffer.getNumSamples() );
-/*
-float value = *m_block.getSampleData( i );
-jassert( value <= 1.f );
-jassert( value >= -1.f );
-*/
+
         // apply high shelf
         m_shelveFilterArray.getReference( i ).process( m_block.getWritePointer( i ), m_block.getNumSamples() );
         
@@ -174,11 +170,6 @@ jassert( value >= -1.f );
 
         // copy block at the end of memory
         m_memory.copyFrom( i, m_memorySize, m_block, i, 0, m_block.getNumSamples() );
-/*
-value = m_memory.getSampleData( i )[ m_memorySize ];
-jassert( value <= 1.f );
-jassert( value >= -1.f );
-*/
     }
 
     m_memorySize += buffer.getNumSamples();
@@ -222,10 +213,6 @@ jassert( value >= -1.f );
             for ( int s = 0 ; s < m_sampleSize100ms ; ++s )
             {
                 const float value = *data;
-/*
-jassert( value <= 1.f );
-jassert( value >= -1.f );
-*/
                 sum += value * value * weightingCoef;
                 ++data;
             }
@@ -262,7 +249,6 @@ void LufsProcessor::addSquaredInput( const float squaredInput )
 {
     if ( m_processSize < m_maxSize )
     {
-        //m_squaredInputArray.getReference( m_position ) = (double)gain;
         m_squaredInputArray[ m_processSize ] = squaredInput;
         ++m_processSize;
     }
@@ -329,59 +315,6 @@ void LufsProcessor::updatePosition( int position )
             
             m_integratedVolume = getLufsVolume( relativeSum );
             m_integratedVolumeArray[ position ] = m_integratedVolume;
-/*
-            //    return ( 20.f * (logf(linearVolume) / ms_ln10)) ;
-
-            // gated 
-
-            float absoluteSum2 = 0.f;
-            int nbWindowsAbsolute2 = 0;
-            for ( int i = 0 ; i <= position - 4; ++i )
-            {
-                float sum = 0.f;
-                for ( int j = 0 ; j < 4; ++j )
-                {
-                    sum += m_squaredInputArray[ i + j ];
-                }
-                sum /= 4;
-                float volume = float(-0.691 + 10.*std::log10( sum ) );
-                if ( volume > -70.f )
-                {
-                    //DBG( juce::String( "Adding 2 " ) + juce::String( sum ) );
-                    absoluteSum2 += sum;
-                    ++nbWindowsAbsolute2;
-                }
-            }
-
-            jassert( nbWindowsAbsolute2 == m_sum400ms70.size() );
-
-            absoluteSum2 /= nbWindowsAbsolute2;
-            float absoluteThreshold2 = float(-0.691 + 10.*std::log10( absoluteSum2 ) ) -10.f;
-
-            float relativeSum2 = 0.f;
-            int nbWindowsRelative2 = 0;
-            for ( int i = 0 ; i <= position - 4; ++i )
-            {
-                float sum = 0.f;
-                for ( int j = 0 ; j < 4; ++j )
-                {
-                    sum += m_squaredInputArray[ i + j ];
-                }
-                sum /= 4;
-                float volume = float(-0.691 + 10.*std::log10( sum ) );
-                if ( volume > absoluteThreshold2 )
-                {
-                    relativeSum2 += sum;
-                    ++nbWindowsRelative2;
-                }
-            }
-            relativeSum2 /= nbWindowsRelative2;
-            
-            //DBG( juce::String( "relativeSum2 " ) + juce::String( relativeSum2 ) );
-            float gatedVolume2 = jmax( float(-0.691 + 10.*std::log10( relativeSum2 ) ), DEFAULT_MIN_VOLUME );
-
-            jassert( std::abs( gatedVolume2 - m_integratedVolume ) < 0.1f );
-*/
         }
     }
     else
