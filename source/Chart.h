@@ -69,6 +69,8 @@ public:
     virtual void resized();
     virtual void mouseWheelMove( const juce::MouseEvent& event, const juce::MouseWheelDetails & wheel ) override;
 
+    void resetScrolling();
+
     // juce::Viewport
     // virtual void visibleAreaChanged( const juce::Rectangle<int>& newVisibleArea );
 

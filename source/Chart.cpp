@@ -234,13 +234,19 @@ void Chart::paintValues( juce::Graphics& g, const juce::Colour _color, const flo
 ChartView::ChartView( float _minChartVolume, float _maxChartVolume ) 
     : m_chart (_minChartVolume, _maxChartVolume )
 {
-    m_chart.setSize( 10, 300 );
+    resetScrolling();
+
     m_chart.setChartView( this );
 
     setViewedComponent( &m_chart, false );
 }
 
 void ChartView::resized()
+{
+    m_chart.setSize( 1 + getWidth(), getHeight() - 35 );
+}
+
+void ChartView::resetScrolling()
 {
     m_chart.setSize( 1 + getWidth(), getHeight() - 35 );
 }

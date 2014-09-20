@@ -224,6 +224,8 @@ void LufsPluginEditor::buttonClicked (juce::Button* button)
     {
         processor->m_lufsProcessor.reset();
 
+        m_chart.resetScrolling();
+
         repaint();
     }
     else if ( button == &m_pauseButton )
@@ -247,7 +249,6 @@ void LufsPluginEditor::buttonClicked (juce::Button* button)
             juce::AlertWindow::showMessageBox( juce::AlertWindow::NoIcon, "Measurement has not yet started - there is no data to export.", "" );
             return;
         }
-
 
         m_internallyPaused = true;
 
