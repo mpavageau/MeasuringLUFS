@@ -23,12 +23,16 @@ if ( _ACTION == "xcode4" ) then
         files { 
             "source/**.h", 
             "source/**.cpp",
-            "source/**.mm", 
+            "source/Info.plist",
+			"source/MeasuringLUFSIcon.icns",
+            "source/**.mm",
             }
 else
         files { 
             "source/**.h", 
             "source/**.cpp",
+			"source/MeasuringLufsWindowsResources.rc",
+			"source/MeasuringLUFSIcon.ico",
             "extern/juce/modules/juce_audio_basics/juce_audio_basics.cpp",
             "extern/juce/modules/juce_audio_devices/juce_audio_devices.cpp",
             "extern/juce/modules/juce_audio_formats/juce_audio_formats.cpp",
@@ -85,8 +89,8 @@ end
 if ( _ACTION == "xcode4" ) then
         files { 
             "extern/juce/modules/juce_audio_plugin_client/VST/juce_VST_Wrapper.cpp",
+            "extern/juce/modules/juce_audio_plugin_client/VST/juce_VST_Wrapper.mm",
             "extern/juce/modules/juce_audio_plugin_client/utility/juce_PluginUtilities.cpp",
-            "extern/juce/modules/juce_audio_plugin_client/VST3/juce_VST3_Wrapper.mm",
 		}        
 else
         files { 
@@ -102,5 +106,5 @@ end
             defines "NDEBUG"
             flags "Optimize" 
 
-            
+          
 		 

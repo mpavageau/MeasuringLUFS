@@ -21,6 +21,7 @@
 
 #include "AppIncsAndDefs.h"
 
+#include "AudioProcessing.h"
 #include "ChannelSelector.h"
 #include "MeasuringLufsComponent.h"
 
@@ -85,18 +86,24 @@ public:
     Application() {}
 
     //==============================================================================
-    void initialise (const juce::String& /*commandLine*/ )
+    void initialise (const juce::String& commandLine )
     {
-        // For this demo, we'll just create the main window...
-        m_mainWindow = new MainWindow();
+        if ( commandLine.length() )
+        {
+            if ( commandLine.toLowerCase().endsWith( ".wav" ) )
+            {
+                juce::File file( commandLine );
 
-        /*  ..and now return, which will fall into to the main event
-            dispatch loop, and this will run until something calls
-            JUCEAppliction::quit().
+                if ( file.exists() )
+                    AudioProcessing::TestOversampling( file );
 
-            In this case, JUCEAppliction::quit() will be called by the
-            hello world window being clicked.
-        */
+                systemRequestedQuit();
+            }
+        }
+        else
+        {
+            m_mainWindow = new MainWindow();
+        }
     }
 
     void shutdown()

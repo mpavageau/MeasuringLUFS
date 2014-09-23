@@ -96,7 +96,7 @@ void Chart::paint(juce::Graphics& g)
             if ( ( v >= m_minChartVolume ) && ( v <= ( m_maxChartVolume ) ) )
             {
                 int y = getVolumeY( imageHeight, v );
-                g.fillRect( 0, y, imageWidth, 1 );
+                g.fillRect( clipBounds.getX(), y, clipBounds.getWidth(), 1 );
             }
         }
 
@@ -159,7 +159,7 @@ void Chart::paint(juce::Graphics& g)
         if ( ( v >= m_minChartVolume + 3.f ) && ( v <= m_maxChartVolume ) )
         {
             int y = getVolumeY( imageHeight, v );
-            g.drawFittedText( juce::String( v, 0 ), 5, y - 30, 20, 30, juce::Justification::centredBottom, 1, 0.01f );
+            g.drawFittedText( juce::String( v, 0 ), clipBounds.getX() + 5, y - 30, 20, 30, juce::Justification::centredBottom, 1, 0.01f );
         }
     }
 
@@ -172,7 +172,7 @@ void Chart::paint(juce::Graphics& g)
     juce::String memory( "Memory: ");
     memory << juce::String( memoryPercent, 2 );
     memory << " %";
-    g.drawFittedText( memory, imageWidth - 125, imageHeight - 23, 120, 10, juce::Justification::bottomRight, 1, 0.01f );
+    g.drawFittedText( memory, clipBounds.getX() + clipBounds.getWidth() - 125, imageHeight - 23, 120, 10, juce::Justification::bottomRight, 1, 0.01f );
 
 }
 
