@@ -27,6 +27,11 @@ class AudioProcessing
 public:
 
     static void TestOversampling( const juce::File & input );
+
+private:
+
+    // b signal must be mono
+    static void convolution( const juce::AudioSampleBuffer & a, const juce::AudioSampleBuffer & b, juce::AudioSampleBuffer & result );
 };
 
 
