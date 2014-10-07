@@ -26,13 +26,38 @@ class AudioProcessing
 {
 public:
 
+    // oversamples by 4 a wave file using polyphase4 and saves new file to disk
     static void TestOversampling( const juce::File & input );
+
+    // TruePeak class calculates True Peak linear volume for buffer
+
+    class TruePeak
+    {
+    public:
+        TruePeak();
+
+        // processAndGetTruePeak method uses previous values stored in internal buffer as beginning of current buffer
+        float processAndGetTruePeak( const juce::AudioSampleBuffer & buffer );
+
+        // resets internal buffers 
+        void reset();
+
+    private:
+
+        float getPolyphase4AbsMax( const juce::AudioSampleBuffer & buffer );
+
+        juce::AudioSampleBuffer m_inputs;
+        juce::AudioSampleBuffer m_outputs;
+    };
 
 private:
 
     // b signal must be mono
     static void convolution( const juce::AudioSampleBuffer & a, const juce::AudioSampleBuffer & b, juce::AudioSampleBuffer & result );
-};
 
+    static void polyphase4( const juce::AudioSampleBuffer & source, juce::AudioSampleBuffer & result );
+    static float polyphase4ComputeSum( const float * input, int offset, int maxOffset, const float* coefficients, int numCoeff );
+
+};
 
 #endif  // __LUFS_AUDIOPROCESSING_H__

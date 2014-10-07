@@ -41,7 +41,7 @@
 
 #define DEFAULT_MIN_VOLUME ( -100.f )
 
-#define LUFS_EDITOR_WIDTH 750
+#define LUFS_EDITOR_WIDTH 870
 #define LUFS_EDITOR_HEIGHT 500
 
 #define LUFS_COLOR_BACKGROUND juce::Colour( 0xff1A0001 )

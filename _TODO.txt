@@ -6,8 +6,9 @@ Release procedure
 
 
 TODO
+- no true peak for other sampling rates than 48 kHz!
 - channel assignation (today the 6 channels are used in the L R C Lfe Ls Rs order and not explicitly indicated);
 - add an icon 
 - mac app 
-- True Peak 
+- True Peak color change when exceed value 
 

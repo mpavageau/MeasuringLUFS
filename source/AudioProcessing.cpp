@@ -21,7 +21,6 @@
 
 #include "AppIncsAndDefs.h"
 
-
 #include "AudioProcessing.h"
 
 const float filterPhase0[] =
@@ -52,6 +51,10 @@ const float filterPhase3[] =
     0.0332031250000f, -0.0196533203125f, 0.0109863281250f, 0.0017089843750f
 };
 
+const float * filterPhaseArray[] = { filterPhase0, filterPhase1, filterPhase2, filterPhase3 };
+
+const int numCoeffs = sizeof(filterPhase0) / sizeof(float);
+
 void AudioProcessing::TestOversampling( const juce::File & input )
 {
     juce::AudioFormatManager audioFormatManager;
@@ -65,47 +68,13 @@ void AudioProcessing::TestOversampling( const juce::File & input )
         juce::AudioSampleBuffer origin( (int)reader->numChannels, (int)reader->lengthInSamples );
         reader->read( &origin, 0, (int)reader->lengthInSamples, 0, true, true );
 
-        int withZeroesSize = 4 * (int)reader->lengthInSamples;
-        juce::AudioSampleBuffer withZeroes( (int)reader->numChannels, withZeroesSize );
+        // Use polyphase FIR filter with coefficients for upsampling 4 times at 48KHz
+        juce::AudioSampleBuffer output;
+        polyphase4( origin, output );
 
-        for ( int ch = 0 ; ch < (int)reader->numChannels ; ++ch )
-        {
-            float const * src = origin.getReadPointer( ch );
-            float * dest = withZeroes.getWritePointer( ch );
-
-            for ( int i = 0 ; i < (int)reader->lengthInSamples ; ++i )
-            {
-                *dest++ = *src++;
-                *dest++ = 0.f;
-                *dest++ = 0.f;
-                *dest++ = 0.f;
-            }
-        }
-
-        // convolution
-
-        float * filterPhase0Array[] = { (float*)filterPhase0 };
-        juce::AudioSampleBuffer phaseBuffer0( filterPhase0Array, 1, sizeof(filterPhase0) / sizeof(float) );
-        juce::AudioSampleBuffer convoluted0;
-        convolution( withZeroes, phaseBuffer0, convoluted0 );
-
-        float * filterPhase1Array[] = { (float*)filterPhase1 };
-        juce::AudioSampleBuffer phaseBuffer1( filterPhase1Array, 1, sizeof(filterPhase1) / sizeof(float) );
-        juce::AudioSampleBuffer convoluted1;
-        convolution( convoluted0, phaseBuffer1, convoluted1 );
-
-        float * filterPhase2Array[] = { (float*)filterPhase2 };
-        juce::AudioSampleBuffer phaseBuffer2( filterPhase2Array, 1, sizeof(filterPhase2) / sizeof(float) );
-        juce::AudioSampleBuffer convoluted2;
-        convolution( convoluted1, phaseBuffer2, convoluted2 );
-
-        float * filterPhase3Array[] = { (float*)filterPhase2 };
-        juce::AudioSampleBuffer phaseBuffer3( filterPhase3Array, 1, sizeof(filterPhase3) / sizeof(float) );
-        juce::AudioSampleBuffer convoluted3;
-        convolution( convoluted2, phaseBuffer3, convoluted3 );
 
         juce::String outputName = input.getFullPathName().substring(0, input.getFullPathName().length() - 4);
-        juce::File outputFile( outputName + "_CONVO_4.wav" );
+        juce::File outputFile( outputName + "_polyphase4.wav" );
         juce::FileOutputStream * outputStream = new juce::FileOutputStream( outputFile );
 
         juce::WavAudioFormat wavAudioFormat;
@@ -116,8 +85,8 @@ void AudioProcessing::TestOversampling( const juce::File & input )
 
         if ( writer != nullptr )
         {
-            writer->writeFromAudioSampleBuffer( convoluted3, 0, convoluted3.getNumSamples() );
-
+            writer->writeFromAudioSampleBuffer( output, 0, output.getNumSamples() );
+            
             delete writer;
         }
 
@@ -158,5 +127,118 @@ void AudioProcessing::convolution( const juce::AudioSampleBuffer & a, const juce
             res[i] = sum;
         }
     }
+}
+
+/**
+    Efficiently upsample by 4 signal (polyphase coefficients are for a 48 kHz signal).
+
+    Processes 4 samples of the output signal in a single loop iteration.
+    In one loop, each of the 4 processed samples is filtered with its own set of coefficients
+
+*/
+void AudioProcessing::polyphase4( const juce::AudioSampleBuffer & source, juce::AudioSampleBuffer & result )
+{
+    int sampleSize = source.getNumSamples();
+
+    result.setSize( source.getNumChannels(), 4*source.getNumSamples() + numCoeffs, false, false, true );
+    
+    for ( int ch = 0 ; ch < source.getNumChannels() ; ++ch )
+    {
+        const float * input = source.getArrayOfReadPointers()[ ch ];
+        float * res = result.getArrayOfWritePointers()[ ch ];
+
+        for ( int i = 0 ; i < sampleSize ; ++i )
+        {
+            res[4*i]      = polyphase4ComputeSum( input, i, source.getNumSamples(), filterPhase0, numCoeffs );
+            res[4*i+1]    = polyphase4ComputeSum( input, i, source.getNumSamples(), filterPhase1, numCoeffs );
+            res[4*i+2]    = polyphase4ComputeSum( input, i, source.getNumSamples(), filterPhase2, numCoeffs );
+            res[4*i+3]    = polyphase4ComputeSum( input, i, source.getNumSamples(), filterPhase3, numCoeffs );
+        }
+    }
+}
+
+float AudioProcessing::polyphase4ComputeSum( const float * input, int offset, int maxOffset, const float* coefficients, int numCoeff )
+{
+    float sum = 0.f;
+
+    for ( int j = 0 ; j < numCoeff ; ++j )
+    {
+        int index = offset - j;
+        if ( ( index >= 0 ) && ( index < maxOffset ) )
+        {
+            sum += ( input[index] * coefficients[j] );
+        }
+    }
+
+    return sum;
+}
+
+
+AudioProcessing::TruePeak::TruePeak()
+{
 
 }
+
+float AudioProcessing::TruePeak::processAndGetTruePeak( const juce::AudioSampleBuffer & buffer )
+{
+    if (m_inputs.getNumSamples() >= numCoeffs)
+    {
+        // we have enough data from a previous process 
+
+        for ( int ch = 0 ; ch < buffer.getNumChannels() ; ++ch )
+        {
+            m_inputs.copyFrom( ch, 0, &m_inputs.getArrayOfReadPointers()[ch][m_inputs.getNumSamples() - numCoeffs], numCoeffs );
+        }
+
+        // resize if necessary
+        if ( m_inputs.getNumSamples() != numCoeffs + buffer.getNumSamples() )
+            m_inputs.setSize( buffer.getNumChannels(), numCoeffs + buffer.getNumSamples(), true, false, true );
+    }
+    else
+    {
+        // setSize clears buffer content too
+
+        m_inputs.setSize( buffer.getNumChannels(), numCoeffs + buffer.getNumSamples(), false, true );
+    }
+
+    // copy buffer to inputs with numCoefs offset
+    for ( int ch = 0 ; ch < buffer.getNumChannels() ; ++ch )
+    {
+        m_inputs.copyFrom( ch, numCoeffs, buffer, ch, 0, buffer.getNumSamples() );
+    }
+
+    return getPolyphase4AbsMax( m_inputs );
+}
+
+void AudioProcessing::TruePeak::reset()
+{
+    m_inputs.setSize(0, 0);
+    m_outputs.setSize(0, 0);
+}
+
+float AudioProcessing::TruePeak::getPolyphase4AbsMax( const juce::AudioSampleBuffer & buffer )
+{
+    // reset current tru peak
+    float bufferTruePeak = 0.f;
+
+    int sampleSize = buffer.getNumSamples();
+
+    for ( int ch = 0 ; ch < buffer.getNumChannels() ; ++ch )
+    {
+        const float * input = buffer.getArrayOfReadPointers()[ ch ];
+
+        for ( int i = 0 ; i < sampleSize ; ++i )
+        {
+            for ( int j = 0 ; j < 4 ; ++j ) // number of polyphase filters
+            {
+                float absSample = fabs( polyphase4ComputeSum( input, i, buffer.getNumSamples(), filterPhaseArray[j], numCoeffs ) );
+
+                if ( bufferTruePeak < absSample )
+                    bufferTruePeak = absSample;
+            }
+        }
+    }
+
+    return bufferTruePeak;
+}
+

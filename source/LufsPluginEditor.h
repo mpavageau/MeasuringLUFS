@@ -65,6 +65,7 @@ private:
     FloatComponent m_shortTermComponent;
     FloatComponent m_integratedComponent;
     FloatComponent m_rangeComponent;
+    FloatComponent m_truePeakComponent;
 
     juce::TextButton m_resetButton;
     juce::TextButton m_pauseButton;

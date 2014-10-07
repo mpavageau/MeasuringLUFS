@@ -29,6 +29,16 @@ void DEBUGPLUGIN_output( const char * _text, ...);
 
 double LufsProcessor::ms_log10 = log( 10.0 );
 
+float getDecibelVolumeFromLinearVolume(float _linearVolume )
+{
+    static const float log10dividedBy20 = 0.1151292546497f;
+
+    if ( _linearVolume < 0.00001f )
+        return DEFAULT_MIN_VOLUME;
+
+    return logf( _linearVolume ) / log10dividedBy20;
+}
+
 LufsProcessor::LufsProcessor( const int nbChannels )
     : m_memory( nbChannels, 0 )
     , m_block( nbChannels, 0 )
@@ -40,6 +50,7 @@ LufsProcessor::LufsProcessor( const int nbChannels )
     , m_momentaryVolumeArray( NULL )
     , m_shortTermVolumeArray( NULL )
     , m_integratedVolumeArray( NULL )
+    , m_truePeakArray( NULL )
     , m_maxSize( 0 )
     , m_processSize( 0 )
     , m_validSize( 0 )
@@ -60,6 +71,7 @@ LufsProcessor::LufsProcessor( const int nbChannels )
     m_momentaryVolumeArray = (float*)malloc( m_maxSize * sizeof( float ) );
     m_shortTermVolumeArray = (float*)malloc( m_maxSize * sizeof( float ) );
     m_integratedVolumeArray = (float*)malloc( m_maxSize * sizeof( float ) );
+    m_truePeakArray = (float*)malloc( m_maxSize * sizeof( float ) );
 
     m_memArray = (float**)malloc( nbChannels * sizeof( float* ) );
 
@@ -82,6 +94,7 @@ LufsProcessor::~LufsProcessor()
     free( m_momentaryVolumeArray );
     free( m_shortTermVolumeArray );
     free( m_integratedVolumeArray );
+    free( m_truePeakArray );
 
     for ( int i = 0 ; i < m_nbChannels ; ++i )
     {
@@ -105,6 +118,9 @@ void LufsProcessor::reset()
     m_integratedVolume = DEFAULT_MIN_VOLUME;
     m_rangeMin = DEFAULT_MIN_VOLUME;
     m_rangeMax = DEFAULT_MIN_VOLUME;
+    m_currentTruePeak = DEFAULT_MIN_VOLUME;
+    m_maxTruePeak = DEFAULT_MIN_VOLUME;
+    m_truePeakProcessor.reset();
 
     m_sum400ms70.reset();
     m_sum3s70.reset();
@@ -148,9 +164,17 @@ void LufsProcessor::processBlock( juce::AudioSampleBuffer& buffer )
     if ( m_paused )
         return;
 
-    processPeak( buffer );
-
     const juce::SpinLock::ScopedLockType scopedLock( m_locker );
+
+    // process true peak
+    float linearTruePeak = m_truePeakProcessor.processAndGetTruePeak( buffer );
+    float decibelTruePeak = getDecibelVolumeFromLinearVolume( linearTruePeak ) - 3.f; 
+
+    if ( m_currentTruePeak < decibelTruePeak ) 
+        m_currentTruePeak = decibelTruePeak;
+
+    if ( m_maxTruePeak < decibelTruePeak ) 
+        m_maxTruePeak = decibelTruePeak;
 
     m_block.setSize( m_nbChannels, buffer.getNumSamples(), false, false, true );
 
@@ -218,7 +242,10 @@ void LufsProcessor::processBlock( juce::AudioSampleBuffer& buffer )
             }
         }
 
-        addSquaredInput( sum / m_sampleSize100ms );
+        addSquaredInputAndTruePeak( sum / m_sampleSize100ms, m_currentTruePeak );
+
+        // reset true peak
+        m_currentTruePeak = DEFAULT_MIN_VOLUME;
 
         sizeDone += m_sampleSize100ms;
 
@@ -245,11 +272,12 @@ void LufsProcessor::processBlock( juce::AudioSampleBuffer& buffer )
     m_memorySize = remaining;
 }
 
-void LufsProcessor::addSquaredInput( const float squaredInput )
+void LufsProcessor::addSquaredInputAndTruePeak( const float squaredInput, const float truePeak )
 {
     if ( m_processSize < m_maxSize )
     {
         m_squaredInputArray[ m_processSize ] = squaredInput;
+        m_truePeakArray[ m_processSize ] = truePeak;
         ++m_processSize;
     }
 }
@@ -581,240 +609,5 @@ void BiquadProcessor::setFilterParams( const float _samplingRate, const FilterTy
     }
 }
 
-float getDecibelVolumeFromLinearVolume( f32 _linearVolume )
-{
-    static const float log10dividedBy20 = 0.1151292546497f;
-
-    if ( _linearVolume < 0.00001f )
-        return -100.f;
-
-    return logf( _linearVolume ) / log10dividedBy20;
-}
-
-void LufsProcessor::processPeak( const juce::AudioSampleBuffer& buffer )
-{
-    static int sample = 0;
-
-    for ( int ch = 0 ; ch < buffer.getNumChannels() ; ++ch )
-    {
-        // check size
-        if ( m_tempBlock.getNumSamples() < buffer.getNumSamples() + 4 )
-            m_tempBlock.setSize( 1, buffer.getNumSamples() + 4 );
-
-        // copy channel buffer to temp buffer 
-        memcpy( m_tempBlock.getArrayOfWritePointers()[0], m_memArray[ch], 4 * sizeof( float ) );
-        memcpy( &m_tempBlock.getArrayOfWritePointers()[0][4], buffer.getArrayOfReadPointers()[ch], buffer.getNumSamples() * sizeof( float ) );
-
-        const int sampleSize = 4 + buffer.getNumSamples();
-        const float * data = m_tempBlock.getArrayOfReadPointers()[ 0 ];
-        float prevPrev = *data++;
-        float prev = *data++;
-        float value = *data++;
-        float next = *data++;
-        float nextNext = *data++;
-
-        for ( int i = 2 ; i < ( sampleSize - 2 ) ; ++i )
-        {
-            f32 maxValue = 0.f;
-
-            if ( ( value > ( 0.7f * m_maxLinArray[ ch ] ) ) && ( value >= prev )  && ( value >= prevPrev ) && ( value >= next ) && ( value >= nextNext ) )
-            {
-                maxValue = value;
-
-                LinInterpolationMinMaxEstimate estimate( data - 5, i, false );
-
-                if ( estimate.isValid() && estimate.getMinMax() > maxValue )
-                {
-                    maxValue = estimate.getMinMax();
-                }
-
-            }
-            else if ( ( -value > ( 0.7f * m_maxLinArray[ ch ] ) ) && ( value <= prev ) && ( value <= prevPrev ) && ( value <= next ) && ( value <= nextNext ) )
-            {
-                maxValue = -value;
-
-                LinInterpolationMinMaxEstimate estimate( data - 5, i, true );
-
-                if ( estimate.isValid() && ( -estimate.getMinMax() ) > maxValue )
-                {
-                    maxValue = -estimate.getMinMax();
-                }
-            }
-
-            float decibels = getDecibelVolumeFromLinearVolume( maxValue );
-            static float maxDecibels = decibels;
-            if ( decibels > maxDecibels )
-                maxDecibels = decibels;
-
-            if ( decibels > -1.f )
-            {
-                //DBG("found value " + String(maxValue) + String(" at pos ") + String(sample + i) + String(" > ") + String( decibels ) + String(" dB - (max: ")  + String( maxDecibels ) + String(" dB) ") );
-                DBG( juce::String("At pos ") + juce::String(sample + i) + juce::String(": ") + juce::String( decibels, 2 ) + juce::String(" dB - (max: ")  + juce::String( maxDecibels, 2 ) + juce::String(" dB) ") );
-            }
-            
-            if ( maxValue > m_maxLinArray[ ch ] )
-                m_maxLinArray[ ch ] = maxValue;
-
-            prevPrev = prev;
-            prev = value;
-            value = next;
-            next = nextNext;
-            nextNext = *data++;
-        }
-    }
-
-    sample += buffer.getNumSamples();
-}
-
-
-
-
-
-LinInterpolationMinMaxEstimate::LinInterpolationMinMaxEstimate( const f32 * _fiveValueArray, const u32 _xOffset, const bool _findMinimum ) 
-    : m_y0( 0.f )
-    , m_isValid( true )
-    , m_xMiddle( 0.f )
-    , m_xMiddleWithoutOffset( 0.f )
-    , m_minMax( 0.f )
-{
-    // look at values to decide if we use the first four values or the last four values 
-    if ( ( ( _fiveValueArray[ 2 ] - _fiveValueArray[ 0 ] ) * ( _fiveValueArray[ 4 ] - _fiveValueArray[ 2 ] ) ) > 0.f ) // these five values should constitute a min or a max
-    {
-        // there is a problem with the data given, don't calculate anything, use minimum if _findMinimum, else use maximum
-        m_xMiddle = (f32) _xOffset + 2.f;
-
-        if ( _findMinimum )
-        {
-            for ( u32 u = 1 ; u < 5 ; ++u )
-            {
-                if ( _fiveValueArray[ u ] < _fiveValueArray[ 0 ] )
-                    m_xMiddle = (f32)( _xOffset + u );
-            }
-        }
-        else
-        {
-            for ( u32 u = 1 ; u < 5 ; ++u )
-            {
-                if ( _fiveValueArray[ u ] > _fiveValueArray[ 0 ] )
-                    m_xMiddle = (f32)( _xOffset + u );
-            }
-        }
-        m_isValid = false;
-        return;
-    }
-
-    f32 absolute_1_2 = fabs( _fiveValueArray[ 2 ] - _fiveValueArray[ 1 ] );
-    f32 absolute_2_3 = fabs( _fiveValueArray[ 3 ] - _fiveValueArray[ 2 ] );
-    bool useLastFour = absolute_2_3 < absolute_1_2;
-
-    f32 origin;
-    if ( useLastFour )
-    {
-        origin = _fiveValueArray[ 1 ];
-        m_y1 = _fiveValueArray[ 2 ] - _fiveValueArray[ 1 ];
-        m_y2 = _fiveValueArray[ 3 ] - _fiveValueArray[ 1 ];
-        m_y3 = _fiveValueArray[ 4 ] - _fiveValueArray[ 1 ];
-    }
-    else
-    {
-        origin = _fiveValueArray[ 0 ];
-        m_y1 = _fiveValueArray[ 1 ] - _fiveValueArray[ 0 ];
-        m_y2 = _fiveValueArray[ 2 ] - _fiveValueArray[ 0 ];
-        m_y3 = _fiveValueArray[ 3 ] - _fiveValueArray[ 0 ];
-    }
-
-    // zero division / validity check 
-
-    if ( fabs( m_y1 + m_y2 - m_y3 ) > ( fabs( m_y1 ) / 1e6f ) )
-    {
-        m_xMiddleWithoutOffset = ( 3.f * m_y2 - 2.f * m_y3 ) / ( m_y1 + m_y2 - m_y3 );
-
-        if ( 
-            ( m_xMiddleWithoutOffset < 1.f ) 
-            || ( m_xMiddleWithoutOffset > 2.f ) 
-            || ( m_y1 * ( m_y3 - m_y2 ) >= 0.f ) 
-            )
-        {
-            m_isValid = false;
-        }
-        else
-        {
-
-            m_minMax = origin + calculateMinOrMax();
-
-            if ( _findMinimum )
-            {
-                if ( m_minMax >= _fiveValueArray[ 2 ] )
-                {
-                    m_xMiddleWithoutOffset = useLastFour ? 1.f : 2.f;
-                    m_minMax = _fiveValueArray[ 2 ];
-                }
-                else
-                {
-                    for ( u32 u = 0 ; u < 5 ; ++u )
-                    {
-                        if ( _fiveValueArray[ u ] < m_minMax )
-                        {
-                            m_xMiddleWithoutOffset = 1.5f;
-                            m_isValid = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                if ( m_minMax <= _fiveValueArray[ 2 ] )
-                {
-                    m_xMiddleWithoutOffset = useLastFour ? 1.f : 2.f;
-                    m_minMax = _fiveValueArray[ 2 ];
-                }
-                else
-                {
-                    for ( u32 u = 0 ; u < 5 ; ++u )
-                    {
-                        if ( _fiveValueArray[ u ] > m_minMax )
-                        {
-                            m_xMiddleWithoutOffset = 1.5f;
-                            m_isValid = false;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    else
-    {
-        // not valid :(
-
-        m_xMiddleWithoutOffset = 1.5f;
-        m_isValid = false;
-    }
-
-    m_xMiddle = m_xMiddleWithoutOffset;
-    m_xMiddle += (f32) _xOffset;
-    m_xMiddle += useLastFour ? 1.f : 0.f;
-}
-
-f32 LinInterpolationMinMaxEstimate::calculateMinOrMax()
-{
-    jassert( m_isValid );
-
-    const f32 alpha = m_xMiddleWithoutOffset - 1.f;
-
-    // left point
-    const f32 leftX = 1.f + alpha * alpha;
-    const f32 leftY = leftX * m_y1;
-
-    // right point
-    const f32 rightX = 1.f + 2.f * alpha - alpha * alpha;
-
-    const f32 a = -m_y2 + m_y3;
-    const f32 b = 3.f * m_y2 - 2.f * m_y3;
-    const f32 rightY = a * rightX + b;
-
-    return ( 1.f - alpha ) * leftY + alpha * rightY;
-}
 
 

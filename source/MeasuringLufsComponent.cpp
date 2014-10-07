@@ -25,7 +25,7 @@
 
 #include "LufsPluginEditor.h"
 
-const u32 lufsYPos = 40;
+const int lufsYPos = 40;
 
 
 MeasuringLufsComponent::MeasuringLufsComponent( bool _hostAppContext )
@@ -41,15 +41,15 @@ MeasuringLufsComponent::MeasuringLufsComponent( bool _hostAppContext )
     juce::Component * lufsEditor = m_processor.createEditorIfNeeded();
     addAndMakeVisible( lufsEditor );
 
-    const u32 componentWidth = lufsEditor->getWidth(); 
-    const u32 componentHeight = lufsEditor->getHeight() + lufsYPos + 50;
+    const int componentWidth = lufsEditor->getWidth(); 
+    const int componentHeight = lufsEditor->getHeight() + lufsYPos + 50;
     setSize( componentWidth, componentHeight );
 
-    const u32 offsetX = 10;
-    const u32 offsetY = 10;
+    const int offsetX = 10;
+    const int offsetY = 10;
 
-    const u32 buttonWidth = 180;
-    const u32 buttonHeight = 30;
+    const int buttonWidth = 180;
+    const int buttonHeight = 30;
     addAndMakeVisible( &m_audioDeviceButton );
     m_audioDeviceButton.setBounds( offsetX, offsetY, buttonWidth, buttonHeight );
     m_audioDeviceButton.setButtonText( "Select the Audio Device");

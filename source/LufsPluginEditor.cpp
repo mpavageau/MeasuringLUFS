@@ -32,7 +32,7 @@ void DEBUGPLUGIN_output( const char * _text, ...);
 LufsPluginEditor::LufsPluginEditor (LufsAudioProcessor* ownerFilter)
     : AudioProcessorEditor (ownerFilter)
     , m_internallyPaused( false )
-    , m_chart( -42.f, -8.f )
+    , m_chart( -42.f, 0.f )//-8.f )
 {
     DEBUGPLUGIN_output("LufsPluginEditor::LufsPluginEditor ownerFilter 0x%x", ownerFilter);
 
@@ -50,6 +50,9 @@ LufsPluginEditor::LufsPluginEditor (LufsAudioProcessor* ownerFilter)
 
     m_rangeComponent.setTextColor( COLOR_RANGE );
     addAndMakeVisible( &m_rangeComponent );
+
+    m_truePeakComponent.setTextColor( COLOR_RANGE );
+    addAndMakeVisible( &m_truePeakComponent );
 
     m_resetButton.setButtonText( juce::String( "Reset" ) );
     m_resetButton.addListener( this );
@@ -130,6 +133,9 @@ void LufsPluginEditor::paint (juce::Graphics& g)
     x += width;
     g.setColour( COLOR_RANGE );
     g.drawFittedText( juce::String( "Range" ), x, height, width, 20, juce::Justification::centred, 1, 0.01f );
+    x += width;
+    g.setColour( COLOR_RANGE );
+    g.drawFittedText( juce::String( "True Peak" ), x, height, width, 20, juce::Justification::centred, 1, 0.01f );
 }
 
 void LufsPluginEditor::resized()
@@ -148,6 +154,8 @@ void LufsPluginEditor::resized()
     m_integratedComponent.setBounds( x, height, width, 40 );
     x += width;
     m_rangeComponent.setBounds( x, height, width, 40 );
+    x += width;
+    m_truePeakComponent.setBounds( x, height, width, 40 );
     x += width;
 
     const int imageX = 10;
@@ -200,6 +208,8 @@ void LufsPluginEditor::timerCallback()
         const float minRangeVolume = processor->m_lufsProcessor.getRangeMinVolume();
         const float maxRangeVolume = processor->m_lufsProcessor.getRangeMaxVolume();
         m_rangeComponent.setVolume( maxRangeVolume - minRangeVolume );
+
+        m_truePeakComponent.setVolume( processor->m_lufsProcessor.getTruePeak() );
     }
     else
     {
@@ -207,6 +217,7 @@ void LufsPluginEditor::timerCallback()
         m_shortTermComponent.setVolume( DEFAULT_MIN_VOLUME );
         m_integratedComponent.setVolume( DEFAULT_MIN_VOLUME );
         m_rangeComponent.setVolume( 0.f );
+        m_truePeakComponent.setVolume( DEFAULT_MIN_VOLUME );
     }
 
     m_timeComponent.setSeconds( processor->m_lufsProcessor.getSeconds() );

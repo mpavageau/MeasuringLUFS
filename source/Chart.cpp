@@ -80,6 +80,13 @@ void Chart::paint(juce::Graphics& g)
 
     if ( m_validSize && clipBounds.getX() < ( m_validSize - 2 ) )
     {
+        const int beginning = clipBounds.getX(); 
+        int size = imageWidth;
+        if ( beginning + size > m_validSize - 2 )
+            size = m_validSize - 2 - beginning;
+
+        paintValues( g, COLOR_RANGE, processor->m_lufsProcessor.getTruePeakArray(), 1, beginning, size );
+        
         // range 
         g.setColour( COLOR_RANGE );
         int yRange = getVolumeY( imageHeight, processor->m_lufsProcessor.getRangeMaxVolume() );
@@ -101,7 +108,6 @@ void Chart::paint(juce::Graphics& g)
         }
 
         // time lines
-        const int beginning = clipBounds.getX(); 
         for ( int i = beginning - 100 ; i < ( beginning + imageWidth ) ; ++i )
         {
             if ( !( i % 100 ) )
@@ -130,10 +136,6 @@ void Chart::paint(juce::Graphics& g)
 
         g.setColour( COLOR_INTEGRATED );
         g.fillRect( 0, getVolumeY( imageHeight, processor->m_lufsProcessor.getIntegratedVolume() ), imageWidth, 3 );
-
-        int size = imageWidth;
-        if ( beginning + size > m_validSize - 2 )
-            size = m_validSize - 2 - beginning;
 
         {
             const int factor = 1;
@@ -202,22 +204,22 @@ void Chart::paintValues( juce::Graphics& g, const juce::Colour _color, const flo
     }
     else
     {
-        f32 min1 = *_data++;;
-        f32 max1 = min1;
+        float min1 = *_data++;;
+        float max1 = min1;
         for ( int j = 1 ; j < _itemsPerPixel ; ++j )
         {
-            f32 val = *_data++;
+            float val = *_data++;
             if ( val > max1 ) max1 = val;
             if ( val < min1 ) min1 = val;
         }
 
         for ( int i = 0 ; i < _pixels - 2; ++i )
         {
-            f32 min2 = *_data++;;
-            f32 max2 = min2;
+            float min2 = *_data++;;
+            float max2 = min2;
             for ( int j = 1 ; j < _itemsPerPixel ; ++j )
             {
-                f32 val = *_data++;
+                float val = *_data++;
                 if ( val > max2 ) max2 = val;
                 if ( val < min2 ) min2 = val;
             }

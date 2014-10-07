@@ -22,6 +22,8 @@
 #ifndef __LUFS_PROCESSOR_H__
 #define __LUFS_PROCESSOR_H__
 
+#include "AudioProcessing.h"
+
 class BiquadProcessor
 {
 public:
@@ -170,6 +172,8 @@ public:
     inline float * getMomentaryVolumeArray() const { return m_momentaryVolumeArray; } 
     inline float * getShortTermVolumeArray() const { return m_shortTermVolumeArray; } 
     inline float * getIntegratedVolumeArray() const { return m_integratedVolumeArray; }
+    inline float * getTruePeakArray() const { return m_truePeakArray; }
+    inline float getTruePeak() const { return m_maxTruePeak; }
 
     inline float getIntegratedVolume() { return m_integratedVolume; }
     inline float getRangeMinVolume() { return m_rangeMin; }
@@ -181,9 +185,8 @@ public:
     inline int getSeconds() const { return m_processSize / 10; }
 
 private:
-    void processPeak( const juce::AudioSampleBuffer& buffer );
 
-    void addSquaredInput( const float squaredInput );
+    void addSquaredInputAndTruePeak( const float squaredInput, const float truePeak );
     void updatePosition( int position );
 
     static double ms_log10;
@@ -204,13 +207,16 @@ private:
     int m_memorySize;
     int m_sampleSize100ms;
 
-    float * m_squaredInputArray;
+    float * m_squaredInputArray; // squared input for 100 ms, summed for all channels, after K weighting filtration
     float * m_momentaryVolumeArray;
     float * m_shortTermVolumeArray;
     float * m_integratedVolumeArray;
+    float * m_truePeakArray; // true peak linear volume for 100 ms
     float m_integratedVolume;
     float m_rangeMin;
     float m_rangeMax;
+    float m_currentTruePeak;
+    float m_maxTruePeak;
 
     // 4 samples to calculate min/max, per channel
     float ** m_memArray;
@@ -223,34 +229,9 @@ private:
     LufsFloatArray m_sum400ms70;
     LufsFloatArray m_sum3s70;
 
+    AudioProcessing::TruePeak m_truePeakProcessor;
+
     bool m_paused;
 };
-
-typedef float f32;
-typedef unsigned int u32;
-
-class LinInterpolationMinMaxEstimate
-{
-    // middle value of _fiveValueArray is min or max 
-    // _findMinimum is true when looking for a minimum, false when looking for a maximum
-
-public:
-    LinInterpolationMinMaxEstimate( const f32 * _fiveValueArray, const u32 _xOffset, const bool _findMinimum ); 
-
-    inline f32 getXMiddle() const { return m_xMiddle; }
-    inline bool isValid() const { return m_isValid; }
-    inline f32 getMinMax() const { jassert( m_isValid ); return m_minMax; }
-
-private:
-
-    f32 calculateMinOrMax();
-
-    f32 m_y0, m_y1, m_y2, m_y3; 
-    f32 m_xMiddle;
-    f32 m_xMiddleWithoutOffset;
-    f32 m_minMax;
-    bool m_isValid;
-};
-
 
 #endif  // __LUFS_PROCESSOR_H__
