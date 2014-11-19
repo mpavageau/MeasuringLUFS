@@ -29,6 +29,9 @@ public:
     // oversamples by 4 a wave file using polyphase4 and saves new file to disk
     static void TestOversampling( const juce::File & input );
 
+    // applies simple convolution with polyphase params and saves new file to disk
+    static void TestSimpleConvolution( const juce::File & input );
+
     // TruePeak class calculates True Peak linear volume for buffer
 
     class TruePeak
@@ -36,18 +39,23 @@ public:
     public:
         TruePeak();
 
-        // processAndGetTruePeak method uses previous values stored in internal buffer as beginning of current buffer
-        float processAndGetTruePeak( const juce::AudioSampleBuffer & buffer );
+        // process: since this method needs numCoeffs values more than buffer size, 
+        // numCoeffs values from previous process call are used at beginning of buffer
+        void process( const juce::AudioSampleBuffer & buffer );
+
+        float getTruePeakValue() const { return m_truePeakValue; }
+        const float * getTruePeakChannelArray() const { return m_truePeakChannelArray; }
 
         // resets internal buffers 
         void reset();
 
     private:
 
-        float getPolyphase4AbsMax( const juce::AudioSampleBuffer & buffer );
+        void processPolyphase4AbsMax( const juce::AudioSampleBuffer & buffer );
 
-        juce::AudioSampleBuffer m_inputs;
-        juce::AudioSampleBuffer m_outputs;
+        juce::AudioSampleBuffer m_inputs; // getPolyphase4AbsMax processes this buffer  
+        float m_truePeakChannelArray[ MEASURING_LUFS_MAX_NB_CHANNELS ];
+        float m_truePeakValue;
     };
 
 private:

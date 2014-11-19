@@ -174,6 +174,8 @@ public:
     inline float * getIntegratedVolumeArray() const { return m_integratedVolumeArray; }
     inline float * getTruePeakArray() const { return m_truePeakArray; }
     inline float getTruePeak() const { return m_maxTruePeak; }
+    inline float * getTruePeakChannelArray(int ch) const { return m_truePeakPerChannelArray[ch]; }
+    inline float getTruePeakChannelMax(int ch) const { return m_truePeakMaxPerChannelArray[ch]; }
 
     inline float getIntegratedVolume() { return m_integratedVolume; }
     inline float getRangeMinVolume() { return m_rangeMin; }
@@ -186,7 +188,7 @@ public:
 
 private:
 
-    void addSquaredInputAndTruePeak( const float squaredInput, const float truePeak );
+    void addSquaredInputAndTruePeak( const float squaredInput, AudioProcessing::TruePeak * truePeakProcessor, const int numChannels );
     void updatePosition( int position );
 
     static double ms_log10;
@@ -211,17 +213,18 @@ private:
     float * m_momentaryVolumeArray;
     float * m_shortTermVolumeArray;
     float * m_integratedVolumeArray;
-    float * m_truePeakArray; // true peak linear volume for 100 ms
+    float * m_truePeakArray; // max true peak linear volume for 100 ms
+    float * m_truePeakPerChannelArray[MEASURING_LUFS_MAX_NB_CHANNELS]; // true peak linear volume for 100 ms, per channel
+    float m_truePeakMaxPerChannelArray[MEASURING_LUFS_MAX_NB_CHANNELS]; // true peak max linear volume for 100 ms, per channel
+    float m_maxTruePeak;
     float m_integratedVolume;
     float m_rangeMin;
     float m_rangeMax;
-    float m_currentTruePeak;
-    float m_maxTruePeak;
 
     // 4 samples to calculate min/max, per channel
     float ** m_memArray;
     // linear max, per channel 
-    float * m_maxLinArray;
+    float m_maxLinArray[MEASURING_LUFS_MAX_NB_CHANNELS];
     juce::AudioSampleBuffer m_tempBlock; // to process min max;
 
     juce::SpinLock m_locker;

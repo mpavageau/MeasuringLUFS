@@ -6,9 +6,9 @@ Release procedure
 
 
 TODO
-- no true peak for other sampling rates than 48 kHz!
+- indicate that there is no true peak for other sampling rates than 48 kHz!
+- add an option to export true peak values 
 - channel assignation (today the 6 channels are used in the L R C Lfe Ls Rs order and not explicitly indicated);
-- add an icon 
-- mac app 
+- mac plug 
 - True Peak color change when exceed value 
 

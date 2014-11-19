@@ -51,9 +51,6 @@ LufsPluginEditor::LufsPluginEditor (LufsAudioProcessor* ownerFilter)
     m_rangeComponent.setTextColor( COLOR_RANGE );
     addAndMakeVisible( &m_rangeComponent );
 
-    m_truePeakComponent.setTextColor( COLOR_RANGE );
-    addAndMakeVisible( &m_truePeakComponent );
-
     m_resetButton.setButtonText( juce::String( "Reset" ) );
     m_resetButton.addListener( this );
     m_resetButton.setColour( juce::TextButton::buttonColourId, LUFS_COLOR_BACKGROUND );
@@ -86,8 +83,11 @@ LufsPluginEditor::LufsPluginEditor (LufsAudioProcessor* ownerFilter)
     m_aboutButton.setColour( juce::TextButton::textColourOnId, LUFS_COLOR_BACKGROUND );
     addAndMakeVisible( &m_aboutButton );
 
-    m_chart.setEditor( this );
+    m_chart.setProcessor( getProcessor() );
     addAndMakeVisible( &m_chart );
+
+    m_truePeakComponent.setProcessor( getProcessor() );
+    addAndMakeVisible( &m_truePeakComponent );  
 
     setSize( LUFS_EDITOR_WIDTH, LUFS_EDITOR_HEIGHT );
 
@@ -133,9 +133,6 @@ void LufsPluginEditor::paint (juce::Graphics& g)
     x += width;
     g.setColour( COLOR_RANGE );
     g.drawFittedText( juce::String( "Range" ), x, height, width, 20, juce::Justification::centred, 1, 0.01f );
-    x += width;
-    g.setColour( COLOR_RANGE );
-    g.drawFittedText( juce::String( "True Peak" ), x, height, width, 20, juce::Justification::centred, 1, 0.01f );
 }
 
 void LufsPluginEditor::resized()
@@ -145,6 +142,7 @@ void LufsPluginEditor::resized()
     const int height = 10;
     int x = 10;
     const int width = 120;
+    const int truePeakWidth = 120;
     m_timeComponent.setBounds( x, 48, width, 40 );
     x += width;
     m_momentaryComponent.setBounds( x, height, width, 40 );
@@ -155,12 +153,10 @@ void LufsPluginEditor::resized()
     x += width;
     m_rangeComponent.setBounds( x, height, width, 40 );
     x += width;
-    m_truePeakComponent.setBounds( x, height, width, 40 );
-    x += width;
 
     const int imageX = 10;
     const int imageY = 100;
-    const int imageWidth = getWidth() - 2 * imageX;
+    const int imageWidth = getWidth() - 2 * imageX - truePeakWidth;
     const int imageHeight = getHeight() - 10 - imageY;
     m_chart.setBounds( imageX, imageY, imageWidth, imageHeight );
 
@@ -179,6 +175,7 @@ void LufsPluginEditor::resized()
     m_aboutButton.setBounds( x, buttonY, width / 2, buttonHeight );
 
     m_chart.setBounds( imageX, imageY, imageWidth, imageHeight ); 
+    m_truePeakComponent.setBounds( imageX + imageWidth, 0, truePeakWidth, imageHeight + imageY);
 }
 
 //==============================================================================
@@ -208,8 +205,6 @@ void LufsPluginEditor::timerCallback()
         const float minRangeVolume = processor->m_lufsProcessor.getRangeMinVolume();
         const float maxRangeVolume = processor->m_lufsProcessor.getRangeMaxVolume();
         m_rangeComponent.setVolume( maxRangeVolume - minRangeVolume );
-
-        m_truePeakComponent.setVolume( processor->m_lufsProcessor.getTruePeak() );
     }
     else
     {
@@ -217,13 +212,16 @@ void LufsPluginEditor::timerCallback()
         m_shortTermComponent.setVolume( DEFAULT_MIN_VOLUME );
         m_integratedComponent.setVolume( DEFAULT_MIN_VOLUME );
         m_rangeComponent.setVolume( 0.f );
-        m_truePeakComponent.setVolume( DEFAULT_MIN_VOLUME );
+        m_truePeakComponent.reset();
     }
 
     m_timeComponent.setSeconds( processor->m_lufsProcessor.getSeconds() );
 
     if ( !processor->m_lufsProcessor.isPaused() )
+    {
         m_chart.update();
+        m_truePeakComponent.update();
+    }
 }
 
 void LufsPluginEditor::buttonClicked (juce::Button* button)

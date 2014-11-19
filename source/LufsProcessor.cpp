@@ -78,10 +78,14 @@ LufsProcessor::LufsProcessor( const int nbChannels )
     for ( int i = 0 ; i < nbChannels ; ++i )
     {
         m_memArray[ i ] = (float*)malloc( LUFS_PROCESSOR_NB_MEMORY_VALUES * sizeof( float ) );
-
         memset( m_memArray[ i ], 0, LUFS_PROCESSOR_NB_MEMORY_VALUES * sizeof( float ) );
+
+        m_truePeakPerChannelArray[ i ] = (float*)malloc( m_maxSize * sizeof( float ) );
+        memset( m_truePeakPerChannelArray[ i ], 0, m_maxSize * sizeof( float ) );
     }
-    m_maxLinArray = (float*)malloc( nbChannels * sizeof( float ) );
+    memset( m_maxLinArray, 0, nbChannels * sizeof( float ) );
+
+    memset( m_truePeakMaxPerChannelArray, 0, nbChannels * sizeof( float ) );
 
     reset();
 }
@@ -99,10 +103,9 @@ LufsProcessor::~LufsProcessor()
     for ( int i = 0 ; i < m_nbChannels ; ++i )
     {
         free( m_memArray[ i ] );
+        free( m_truePeakPerChannelArray[ i ] );
     }
     free( m_memArray );
-
-    free( m_maxLinArray );
 }
 
 void LufsProcessor::reset()
@@ -118,7 +121,6 @@ void LufsProcessor::reset()
     m_integratedVolume = DEFAULT_MIN_VOLUME;
     m_rangeMin = DEFAULT_MIN_VOLUME;
     m_rangeMax = DEFAULT_MIN_VOLUME;
-    m_currentTruePeak = DEFAULT_MIN_VOLUME;
     m_maxTruePeak = DEFAULT_MIN_VOLUME;
     m_truePeakProcessor.reset();
 
@@ -128,6 +130,7 @@ void LufsProcessor::reset()
     for ( int i = 0 ; i < m_nbChannels ; ++i )
     {
         m_maxLinArray[ i ]  = 0.f;
+        m_truePeakMaxPerChannelArray[ i ] = DEFAULT_MIN_VOLUME;
     }
 
 #if 0
@@ -165,16 +168,6 @@ void LufsProcessor::processBlock( juce::AudioSampleBuffer& buffer )
         return;
 
     const juce::SpinLock::ScopedLockType scopedLock( m_locker );
-
-    // process true peak
-    float linearTruePeak = m_truePeakProcessor.processAndGetTruePeak( buffer );
-    float decibelTruePeak = getDecibelVolumeFromLinearVolume( linearTruePeak ) - 3.f; 
-
-    if ( m_currentTruePeak < decibelTruePeak ) 
-        m_currentTruePeak = decibelTruePeak;
-
-    if ( m_maxTruePeak < decibelTruePeak ) 
-        m_maxTruePeak = decibelTruePeak;
 
     m_block.setSize( m_nbChannels, buffer.getNumSamples(), false, false, true );
 
@@ -242,10 +235,15 @@ void LufsProcessor::processBlock( juce::AudioSampleBuffer& buffer )
             }
         }
 
-        addSquaredInputAndTruePeak( sum / m_sampleSize100ms, m_currentTruePeak );
+        // process peak
+        const float * hundredMillisecondBufferArray[MEASURING_LUFS_MAX_NB_CHANNELS] = { 0 };
+        for ( int i = 0 ; i < buffer.getNumChannels() ; ++i )
+            hundredMillisecondBufferArray[ i ] = &( m_memory.getReadPointer( i )[ sizeDone ] );
 
-        // reset true peak
-        m_currentTruePeak = DEFAULT_MIN_VOLUME;
+        const juce::AudioSampleBuffer hundredMillisecondBuffer( (float*const*)hundredMillisecondBufferArray, buffer.getNumChannels(), m_sampleSize100ms );
+        m_truePeakProcessor.process( buffer );
+
+        addSquaredInputAndTruePeak( sum / m_sampleSize100ms, &m_truePeakProcessor, buffer.getNumChannels() );
 
         sizeDone += m_sampleSize100ms;
 
@@ -272,12 +270,34 @@ void LufsProcessor::processBlock( juce::AudioSampleBuffer& buffer )
     m_memorySize = remaining;
 }
 
-void LufsProcessor::addSquaredInputAndTruePeak( const float squaredInput, const float truePeak )
+void LufsProcessor::addSquaredInputAndTruePeak( const float squaredInput, AudioProcessing::TruePeak * truePeakProcessor, const int numChannels )
 {
     if ( m_processSize < m_maxSize )
     {
         m_squaredInputArray[ m_processSize ] = squaredInput;
-        m_truePeakArray[ m_processSize ] = truePeak;
+
+        float linearTruePeak = truePeakProcessor->getTruePeakValue();
+        float decibelTruePeak = getDecibelVolumeFromLinearVolume( linearTruePeak ); 
+        m_truePeakArray[ m_processSize ] = decibelTruePeak;
+
+        if ( decibelTruePeak > m_maxTruePeak )
+            m_maxTruePeak = decibelTruePeak;
+
+        for ( int ch = 0 ; ch < numChannels ; ++ch )
+        {
+            float channelLinearTruePeak = truePeakProcessor->getTruePeakChannelArray()[ch];
+            float channelDecibelTruePeak = getDecibelVolumeFromLinearVolume( channelLinearTruePeak ); 
+
+            m_truePeakPerChannelArray[ch][ m_processSize ] = channelDecibelTruePeak;
+
+            if ( channelDecibelTruePeak > m_truePeakMaxPerChannelArray[ch] )
+                m_truePeakMaxPerChannelArray[ch] = channelDecibelTruePeak;
+        }
+        for ( int ch = numChannels ; ch < MEASURING_LUFS_MAX_NB_CHANNELS ; ++ch )
+        {
+            m_truePeakPerChannelArray[ch][ m_processSize ] = DEFAULT_MIN_VOLUME;
+        }
+
         ++m_processSize;
     }
 }

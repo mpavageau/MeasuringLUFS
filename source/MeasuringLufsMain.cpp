@@ -95,7 +95,9 @@ public:
                 juce::File file( commandLine );
 
                 if ( file.exists() )
-                    AudioProcessing::TestOversampling( file );
+                    AudioProcessing::TestOversampling( file ); // oversamples by 4
+
+                    //AudioProcessing::TestSimpleConvolution( file ); // applies oversampling FIR (coefs are a 24 kHz low pass for a 192 kHz wave)
 
                 systemRequestedQuit();
             }

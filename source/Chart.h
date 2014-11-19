@@ -22,15 +22,14 @@
 #ifndef __LUFS_CHART_H__
 #define __LUFS_CHART_H__
 
-class LufsPluginEditor;
-
+class LufsAudioProcessor;
 class ChartView;
 
 class Chart : public juce::Component
 {
 public:
     Chart( float _minChartVolume, float _maxChartVolume ) 
-        : m_editor( nullptr ) 
+        : m_processor( nullptr ) 
         , m_chartView( nullptr )
         , m_minChartVolume( _minChartVolume )
         , m_maxChartVolume( _maxChartVolume )
@@ -41,7 +40,7 @@ public:
     // juce::Component
     virtual void paint( juce::Graphics& g );
 
-    inline void setEditor( LufsPluginEditor * editor ) { m_editor = editor; }
+    inline void setProcessor( LufsAudioProcessor * processor ) { m_processor = processor; }
     int getVolumeY( const int height, const float decibels );
 
     inline void setChartView( ChartView * _chartView ) { m_chartView = _chartView; }
@@ -52,8 +51,9 @@ public:
 private:
 
     void paintValues( juce::Graphics& g, const juce::Colour _color, const float * _data, const int _itemsPerPixel, const int _offset, const int _pixels );
+    void paintTruePeakLines( juce::Graphics& g, const float * _data, const int _offset, const int _pixels );
 
-    LufsPluginEditor * m_editor;
+    LufsAudioProcessor * m_processor;
     ChartView * m_chartView;
     float m_minChartVolume;
     float m_maxChartVolume;
@@ -74,7 +74,7 @@ public:
     // juce::Viewport
     // virtual void visibleAreaChanged( const juce::Rectangle<int>& newVisibleArea );
 
-    inline void setEditor( LufsPluginEditor * editor ) { m_chart.setEditor( editor ); }
+    inline void setProcessor( LufsAudioProcessor * processor ) { m_chart.setProcessor( processor ); }
 
     void update();
 

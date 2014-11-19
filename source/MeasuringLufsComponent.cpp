@@ -121,7 +121,11 @@ void MeasuringLufsComponent::buttonClicked( juce::Button* )
     if ( !wasPaused )
         m_processor.m_lufsProcessor.pause();
 
-    juce::AudioDeviceSelectorComponent component( m_audioDevice, 6, 6, 6, 6, false, false, false, false );
+    juce::AudioDeviceSelectorComponent component( m_audioDevice, 
+        MEASURING_LUFS_MAX_NB_CHANNELS, MEASURING_LUFS_MAX_NB_CHANNELS, 
+        MEASURING_LUFS_MAX_NB_CHANNELS, MEASURING_LUFS_MAX_NB_CHANNELS, 
+        false, false, false, false );
+
     component.setSize( 600, 400 );
     juce::String selectAudioDevice( "Select the Audio Device (channels order is L R C Lfe Ls Rs)" );
 

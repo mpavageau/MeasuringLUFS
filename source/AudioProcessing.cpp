@@ -121,16 +121,13 @@ void AudioProcessing::convolution( const juce::AudioSampleBuffer & a, const juce
                     sum += ( aSignal[indexA] * bSignal[j] );
             }
 
-            jassert( sum < 1.f );
-            jassert( sum > -1.f );
-
             res[i] = sum;
         }
     }
 }
 
 /**
-    Efficiently upsample by 4 signal (polyphase coefficients are for a 48 kHz signal).
+    Upsample by 4 signal (polyphase coefficients are for a 48 kHz signal).
 
     Processes 4 samples of the output signal in a single loop iteration.
     In one loop, each of the 4 processed samples is filtered with its own set of coefficients
@@ -179,7 +176,7 @@ AudioProcessing::TruePeak::TruePeak()
 
 }
 
-float AudioProcessing::TruePeak::processAndGetTruePeak( const juce::AudioSampleBuffer & buffer )
+void AudioProcessing::TruePeak::process( const juce::AudioSampleBuffer & buffer )
 {
     if (m_inputs.getNumSamples() >= numCoeffs)
     {
@@ -207,19 +204,19 @@ float AudioProcessing::TruePeak::processAndGetTruePeak( const juce::AudioSampleB
         m_inputs.copyFrom( ch, numCoeffs, buffer, ch, 0, buffer.getNumSamples() );
     }
 
-    return getPolyphase4AbsMax( m_inputs );
+    processPolyphase4AbsMax( m_inputs );
 }
 
 void AudioProcessing::TruePeak::reset()
 {
     m_inputs.setSize(0, 0);
-    m_outputs.setSize(0, 0);
 }
 
-float AudioProcessing::TruePeak::getPolyphase4AbsMax( const juce::AudioSampleBuffer & buffer )
+void AudioProcessing::TruePeak::processPolyphase4AbsMax( const juce::AudioSampleBuffer & buffer )
 {
     // reset current tru peak
-    float bufferTruePeak = 0.f;
+    m_truePeakValue = 0.f;
+    memset( m_truePeakChannelArray, 0, sizeof( m_truePeakChannelArray ) );
 
     int sampleSize = buffer.getNumSamples();
 
@@ -233,12 +230,69 @@ float AudioProcessing::TruePeak::getPolyphase4AbsMax( const juce::AudioSampleBuf
             {
                 float absSample = fabs( polyphase4ComputeSum( input, i, buffer.getNumSamples(), filterPhaseArray[j], numCoeffs ) );
 
-                if ( bufferTruePeak < absSample )
-                    bufferTruePeak = absSample;
+                if ( absSample > m_truePeakValue )
+                    m_truePeakValue = absSample;
+
+                if ( absSample > m_truePeakChannelArray[ch] )
+                    m_truePeakChannelArray[ch] = absSample;
             }
         }
     }
-
-    return bufferTruePeak;
 }
 
+/**
+    Applies polyphase FIR filter 
+
+    Coefficients create a 24 kHz low pass filter for a 192 kHz wave
+*/
+void AudioProcessing::TestSimpleConvolution( const juce::File & input )
+{
+    const int polyphase4Size = sizeof(filterPhase0) / sizeof(float);
+    const int convolutionSize = 4 * polyphase4Size;
+    juce::AudioSampleBuffer convolutionFilter( 1, convolutionSize );
+
+    float * data = convolutionFilter.getWritePointer( 0 );
+    for ( int i = 0 ; i < polyphase4Size ; ++ i )
+    {
+        *data++ = filterPhase0[ i ];
+        *data++ = filterPhase1[ i ];
+        *data++ = filterPhase2[ i ];
+        *data++ = filterPhase3[ i ];
+    }
+
+    juce::AudioFormatManager audioFormatManager;
+    audioFormatManager.registerBasicFormats();
+
+    juce::AudioFormatReader * reader = audioFormatManager.createReaderFor( input );
+
+    if ( reader != nullptr )
+    {
+        // read file
+        juce::AudioSampleBuffer origin( (int)reader->numChannels, (int)reader->lengthInSamples );
+        reader->read( &origin, 0, (int)reader->lengthInSamples, 0, true, true );
+
+        // Convolve
+        juce::AudioSampleBuffer output;
+        convolution( origin, convolutionFilter, output );
+        output.applyGain(0.25f); // filter values use sample with 3 zeros per valid sample (1 / 4)
+
+        juce::String outputName = input.getFullPathName().substring(0, input.getFullPathName().length() - 4);
+        juce::File outputFile( outputName + "_convolution.wav" );
+        juce::FileOutputStream * outputStream = new juce::FileOutputStream( outputFile );
+
+        juce::WavAudioFormat wavAudioFormat;
+
+        juce::StringPairArray emptyArray;
+        juce::AudioFormatWriter * writer = wavAudioFormat.createWriterFor( 
+            outputStream, reader->sampleRate, reader->numChannels, 24, emptyArray, 0 );
+
+        if ( writer != nullptr )
+        {
+            writer->writeFromAudioSampleBuffer( output, 0, output.getNumSamples() );
+
+            delete writer;
+        }
+
+        delete reader;
+    }
+}
